@@ -1,6 +1,7 @@
 %%clingo 0 instances/env4.lp -
 #const n=9.
 time(1..n).
+
 %encode tracks.
 
 %straight tracks
@@ -41,6 +42,52 @@ track(5633, (3, 2)).
 
 track(33825, (0, 2)).
 track(33825, (1, 3)).
+
+%diamond plus crossing
+track(38433, (0, 2)).
+track(38433, (1, 3)).
+track(38433, (3, 2)).
+
+track(50211, (0, 2)).
+track(50211, (1, 3)).
+track(50211, (2, 1)).
+
+track(33897, (0, 2)).
+track(33897, (1, 3)).
+track(33897, (0, 1)).
+
+track(35889, (0, 2)).
+track(35889, (1, 3)).
+track(35889, (0, 3)).
+
+track(38505, (0, 2)).
+track(38505, (1, 3)).
+track(38505, (3, 2)).
+track(38505, (0, 1)).
+
+track(38505, (0, 2)).
+track(38505, (1, 3)).
+track(38505, (2, 1)).
+track(38505, (0, 3)).
+
+%double curve crossing
+track(20994, (1, 2)).
+track(20994, (2, 3)).
+
+track(16458, (0, 1)).
+track(16458, (1, 2)).
+
+track(2136, (0, 1)).
+track(2136, (3, 0)).
+
+track(6672, (2, 3)).
+track(6672, (3, 0)).
+
+%track end
+track(8192, (2, end)).
+track(4, (1, end)).
+track(128, (0, end)).
+track(256, (3, end)).
 
 track(N, (X, Y)) :- track(N, (Y, X)).
 

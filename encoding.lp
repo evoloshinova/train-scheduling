@@ -1,5 +1,10 @@
+%%clingo 0 instances/env2.lp -
+%%file encoding.lp
 %%clingo 0 instances/env4.lp -
-#const n=9.
+
+
+
+#const n=4.
 time(1..n).
 
 %_________________Encode Tracks____________________
@@ -30,6 +35,32 @@ track(8192, (2, end)). track(4, (1, end)). track(128, (0, end)). track(256, (3, 
 
 %_________________Generate__________________________
 
+%single slip switch 
+
+track(38505, (0, 2)).
+track(38505, (1, 3)).
+track(38505, (2, 3)).
+track(38505, (0, 1)).
+
+track(52275, (0, 2)).
+track(52275, (1, 3)).
+track(52275, (0, 3)).
+track(52275, (2, 1)).
+
+%symmetrical switch
+
+track(20994, (2, 1)).
+track(20994, (2, 3)).
+
+track(16458, (0, 1)).
+track(16458, (1, 2)).
+
+track(2136, (0, 1)).
+track(2136, (0, 3)).
+
+track(6672, (3, 0)).
+track(6672, (3, 2)).
+
 track(N, (X, Y)) :- track(N, (Y, X)).
 
 moveDir(0, (0, 1)). %go north 
@@ -44,16 +75,18 @@ dir2int(e, 1).
 dir2int(s, 2).
 dir2int(w, 3).
 
-%define tracks where we can turn left depending on the incoming direction
-move(Type, DirOut, move_left) :- track(Type, (DirIn, DirOut)), DirOut = DirIn + 1, cell((_,_),Type).
-move(Type, 3, move_left) :- track(Type, (0, 3)), cell((_,_),Type).
 
-%define tracks where we move forward depending on the incoming direction
-move(Type, DirOut, move_forward) :- track(Type, (DirIn, DirOut)), |DirOut - DirIn| = 2, cell((_,_),Type).
-
-%define tracks where we can turn right depending on the incoming direction
-move(Type, DirOut, move_right) :- track(Type, (DirIn, DirOut)), DirOut = DirIn - 1, cell((_,_),Type).
-move(Type, 0, move_right) :- track(Type, (3, 0)), cell((_,_),Type).
+move(Type, DirL, move_left):- track(Type, (DirIn, DirL)), track(Type, (DirIn, DirR)), DirL = DirIn + 1, DirL != DirR.
+move(Type, 0, move_left):- track(Type, (3, 0)), track(Type, (3, DirR)), DirR > 0.
+    
+move(Type, DirR, move_right):- track(Type, (DirIn, DirL)), track(Type, (DirIn, DirR)), DirR = DirIn - 1, DirL != DirR.
+move(Type, 3, move_right):- track(Type, (0, 3)), track(Type, (0, DirL)), DirL < 3.
+    
+move(Type, DirOut, move_forward) :- track(Type, (DirIn, DirOut)), |DirOut - DirIn| = 2.
+move(Type, DirOut, move_forward) :- track(Type, (DirIn, DirOut)),
+    not move(Type, DirOut, move_left),
+    not move(Type, DirOut, move_right).    
+    
 
 agent(A) :- start(agent(A), _, _).
 action_type(move_forward). action_type(wait). action_type(move_left). action_type(move_right).

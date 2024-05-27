@@ -65,10 +65,10 @@ move(Type, DirOut, move_forward) :- track(Type, (DirIn, DirOut)),
 agent(A) :- start(agent(A), _, _, _).
 action_type(move_forward). action_type(wait). action_type(move_left). action_type(move_right).
 
-#program base 
+#program base. 
 action(agent(A), wait, 0) :- agent(A).
 
-#program step(t)    
+#program step(t).   
 {action(agent(A), Action, t)} :- start(agent(A),(Y,X), _, dir(D)), action_type(Action), time(t).
 
 
@@ -95,7 +95,7 @@ current_state(agent(A), (Y,X), t + 1, Dir) :- current_state(agent(A), (Y,X), T, 
 %also include edge conflict later 
     
 
-#program check(t)
+#program check(t).
 :- end(agent(A), (Y,X), LatestArrival), current_state(agent(A), (Y,X), query(t), _), t > LatestArrival.
     
     

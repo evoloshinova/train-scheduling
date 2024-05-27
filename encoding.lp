@@ -34,10 +34,10 @@ track(2136, (0, 1)). track(2136, (3, 0)). track(6672, (2, 3)). track(6672, (3, 0
 
 track(N, (X, Y)) :- track(N, (Y, X)).
 
-moveDir(0, (0, 1)). %go north 
-moveDir(1, (1, 0)). %go east
-moveDir(2, (0, -1)). %go south
-moveDir(3, (-1, 0)). %go west
+moveDir(0, (1, 0)). %go north 
+moveDir(1, (0, 1)). %go east
+moveDir(2, (-1, 0)). %go south
+moveDir(3, (0, -1)). %go west
 
 revDir(0, 2). revDir(2, 0). revDir(1, 3). revDir(3, 1).
 
@@ -81,7 +81,8 @@ current_state(agent(A), (Y,X), 0, Dir) :- start(agent(A),(Y,X),_,dir(D)), dir2in
 
 % cant do anything other than wait before earliert departure time
 :- t, start(agent(A), _, EarliestDeparture, _), current_state(agent(A), (Y,X), t, DirOut), EarliestDeparture > t, not action(agent(A), wait, t).
-     
+
+    
 current_state(agent(A), (Y + DY, X+DX), t + 1, DirOut2) :- current_state(agent(A), (Y,X), t, DirOut),
     action(agent(A), Action, t + 1), cell((Y,X), Type), cell((Y + DY, X+DX), Type2),
     track(Type, (_, DirOut)), track(Type2, (DirIn,DirOut2)), move(Type, DirOut, Action),

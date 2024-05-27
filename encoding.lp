@@ -67,9 +67,13 @@ action_type(move_forward). action_type(wait). action_type(move_left). action_typ
 
 #program base. 
 action(agent(A), wait, 0) :- agent(A).
-
+current_state(agent(A), (Y,X), 0, Dir) :- start(agent(A),(Y,X),_,dir(D)), dir2int(D, Dir).
+    
+#program check(t).
+:- end(agent(A), (Y,X), LatestArrival), current_state(agent(A), (Y,X), t, _), t > LatestArrival, query(t).
+    
 #program step(t).   
-{action(agent(A), Action, t)} :- start(agent(A),(Y,X), _, dir(D)), action_type(Action), time(t).
+{action(agent(A), Action, t)} :- start(agent(A),(Y,X), _, dir(D)), action_type(Action), t.
 
 
 %one action for each agent and each timestamp
@@ -78,14 +82,12 @@ action(agent(A), wait, 0) :- agent(A).
 % cant do anything other than wait before earliert departure time
 :- t, start(agent(A), _, EarliestDeparture, _), current_state(agent(A), (Y,X), t, DirOut), EarliestDeparture > t, not action(agent(A), wait, t).
      
-current_state(agent(A), (Y,X), 0, Dir) :- start(agent(A),(Y,X),_,dir(D)), dir2int(D, Dir).  
-    
 current_state(agent(A), (Y + DY, X+DX), t + 1, DirOut2) :- current_state(agent(A), (Y,X), t, DirOut),
     action(agent(A), Action, t + 1), cell((Y,X), Type), cell((Y + DY, X+DX), Type2),
     track(Type, (_, DirOut)), track(Type2, (DirIn,DirOut2)), move(Type, DirOut, Action),
     revDir(DirIn, DirOut), moveDir(DirOut, (DY,DX)).
 
-current_state(agent(A), (Y,X), t + 1, Dir) :- current_state(agent(A), (Y,X), T, Dir), action(agent(A), wait, t + 1).
+current_state(agent(A), (Y,X), t + 1, Dir) :- current_state(agent(A), (Y,X), t, Dir), action(agent(A), wait, t + 1).
     
 :- action(agent(A), _, t), not current_state(agent(A), _, t, _).
 
@@ -95,8 +97,7 @@ current_state(agent(A), (Y,X), t + 1, Dir) :- current_state(agent(A), (Y,X), T, 
 %also include edge conflict later 
     
 
-#program check(t).
-:- end(agent(A), (Y,X), LatestArrival), current_state(agent(A), (Y,X), query(t), _), t > LatestArrival.
+
     
     
 #show action/3.

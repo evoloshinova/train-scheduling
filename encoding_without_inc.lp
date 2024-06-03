@@ -1,10 +1,11 @@
-%%clingo 0 instances/env2.lp -
+%%clingo 0 instances/env_17.lp -
 %%file encoding.lp
 %%clingo 0 instances/env4.lp -
 
 
 
-%#const n=5.
+#const n=100.
+time(1..n).
 
 %_________________Encode Tracks____________________
 
@@ -65,46 +66,42 @@ move(Type, DirOut, move_forward) :- track(Type, (DirIn, DirOut)),
 agent(A) :- start(agent(A), _, _, _).
 action_type(move_forward). action_type(wait). action_type(move_left). action_type(move_right).
 
-#program base. 
-action(agent(A), wait, 0) :- agent(A).
-current_state(agent(A), (Y,X), 0, Dir) :- start(agent(A),(Y,X),_,dir(D)), dir2int(D, Dir).
-    
-#program check(t).
-:- end(agent(A), (Y,X), LatestArrival), query(t), not current_state(agent(A), (Y,X), t, _).
-    
-%:- end(agent(A), (Y,X), LatestArrival), current_state(agent(A), (Y,X), t, _), t > LatestArrival, t > imax, query(t).
-    
-#program step(t).   
-1 {action(agent(A), Action, t): action_type(Action)} 1 :- agent(A).
+{action(agent(A), Action, Timestamp)} :- start(agent(A),(Y,X), _, dir(D)), action_type(Action), time(Timestamp).
 
+%action(agent(A), wait, 0) :- agent(A).
 %one action for each agent and each timestamp
-
-%:- query(t), agent(A), not 1 {action(agent(A), _, t)} 1.
+:- time(T), agent(A), not 1 {action(agent(A), _, T)} 1.
     
 % cant do anything other than wait before earliert departure time
-:- start(agent(A), _, EarliestDeparture, _), current_state(agent(A), (Y,X), t, DirOut), EarliestDeparture > t, not action(agent(A), wait, t).
+:- time(T), start(agent(A), _, EarliestDeparture, _), current_state(agent(A), (Y,X), T, DirOut), EarliestDeparture > T, not action(agent(A), wait, T).
 
-    
-current_state(agent(A), (Y + DY, X+DX), t, DirOut2) :- current_state(agent(A), (Y,X), t - 1, DirOut),
-    action(agent(A), Action, t), cell((Y,X), Type), cell((Y + DY, X+DX), Type2),
+current_state(agent(A), (Y,X), 0, Dir) :- start(agent(A),(Y,X),_,dir(D)), dir2int(D, Dir).  
+
+current_state(agent(A), (Y + DY, X + DX), T + 1, DirOut2) :- current_state(agent(A), (Y,X), T, DirOut),
+    action(agent(A), Action, T + 1), cell((Y,X), Type), cell((Y + DY, X + DX), Type2),
     track(Type, (_, DirOut)), track(Type2, (DirIn,DirOut2)), move(Type, DirOut, Action),
     revDir(DirIn, DirOut), moveDir(DirOut, (DY,DX)).
-
-current_state(agent(A), (Y,X), t, Dir) :- current_state(agent(A), (Y,X), t - 1, Dir), action(agent(A), wait, t).
+current_state(agent(A), (Y,X), T + 1, Dir) :- current_state(agent(A), (Y,X), T, Dir), action(agent(A), wait, T + 1).
     
-:- action(agent(A), _, t), not current_state(agent(A), _, t, _).
-
+:- action(agent(A), _, T), not current_state(agent(A), _, T, _).
 %vertex conflict
-:-current_state(agent(A1), (Y,X), t, _), current_state(agent(A2), (Y,X), t, _), A1 < A2.
-:- current_state(agent(A), (Y, X), t, _), current_state(agent(B), (Y, X), t - 1, _), A != B.
+:-current_state(agent(A), (Y,X), T, _), current_state(agent(B), (Y,X), T, _), A < B.
+%swap conflict 
+:- current_state(agent(A), (Y, X), T, _), current_state(agent(B), (Y, X), T + 1, _), A != B.
 
-%also include edge conflict later 
+%agents must reach destination
+done(agent(A), T) :- end(agent(A), (Y,X), LatestArrival), current_state(agent(A), (Y,X), T, _). 
+    
+:- agent(A), not done(agent(A), _). 
+:- done(agent(A), T), end(agent(A), (Y,X), LatestArrival), T > LatestArrival.
+
     
 
 
-    
-    
+        
 #show action/3.
 %#show current_state/4.
 %#show move/3.
 %#show track/2.
+
+#minimize{T: done(agent(A), T)}.

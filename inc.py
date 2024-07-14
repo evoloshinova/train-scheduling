@@ -6,6 +6,10 @@ from clingo.control import Control
 from clingo.solving import SolveResult
 from clingo.symbol import Function, Number
 
+from random import random, seed, randint
+import numpy as np
+
+
 
 class IncConfig:
     '''
@@ -14,11 +18,18 @@ class IncConfig:
     imin: int
     imax: Optional[int]
     istop: str
+    delay_rate: Optional[int]
+    min_duration: Optional[int]
+    max_duration: Optional[int]
+
 
     def __init__(self):
         self.imin = 1
         self.imax = None
         self.istop = "SAT"
+        self.delay_rate = 1
+        self.min_duration = 0
+        self.max_duration = 3
 
 
 def parse_int(conf: Any,
@@ -90,6 +101,44 @@ class IncApp(Application):
             "Stop criterion [{}]".format(self._conf.istop),
             parse_stop(self._conf, "istop"))
 
+        options.add(
+            group, "delay_rate",
+            "Delay rate [{}]".format(self._conf.istop),
+            parse_int(self._conf, "delay_rate"))
+
+        options.add(
+            group, "min_duration",
+            "Minimum duration of delay [{}]".format(self._conf.istop),
+            parse_int(self._conf, "min_duration"))
+
+        options.add(
+            group, "max_duration",
+            "Maximum duration of delay [{}]".format(self._conf.istop),
+            parse_int(self._conf, "max_duration"))
+
+    @staticmethod
+    def delay_prob(delay_rate):
+        if delay_rate < 0:
+            return 0
+        else:
+            return 1 - np.exp(-delay_rate)
+
+    @staticmethod
+    def generate_delay(delay_rate: int, min_duration: int, max_duration: int) -> int:
+        if random() < IncApp.delay_prob(delay_rate):
+            delay_steps = randint(min_duration, max_duration + 1) + 1
+        else:
+            delay_steps = 0
+        return delay_steps
+
+    @staticmethod
+    def generate_agent(num_agents):
+        return randint(1, num_agents)
+
+    @staticmethod
+    def delay(agent, duration, step):
+        return "Delay({agent}, {duration}, {step})".format(agent=agent, step=step, duration=duration)
+
     def main(self, ctl: Control, files: Sequence[str]):
         '''
         The main function implementing incremental solving.
@@ -101,9 +150,15 @@ class IncApp(Application):
         ctl.add("check", ["t"], "#external query(t).")
 
         conf = self._conf
+        if conf.delay_rate is None:
+            conf.delay_rate = 0
+        if conf.min_duration is None:
+            conf.min_duration = 0
+        if conf.max_duration is None:
+            conf.max_duration = 0
+
         step = 0
         ret: Optional[SolveResult] = None
-
         while ((conf.imax is None or step < conf.imax) and
                (ret is None or step < conf.imin or (
                    (conf.istop == "SAT" and not ret.satisfiable) or
@@ -114,6 +169,12 @@ class IncApp(Application):
             if step > 0:
                 ctl.release_external(Function("query", [Number(step - 1)]))
                 parts.append(("step", [Number(step)]))
+
+                delay_steps = self.generate_delay(conf.delay_rate, conf.min_duration, conf.max_duration)
+                if delay_steps > 0:
+                    agent = self.generate_agent()
+                    delay = self.delay(agent, step, delay_steps)
+                    parts.append(("step", [delay]))
             else:
                 parts.append(("base", []))
             ctl.ground(parts)
@@ -122,4 +183,5 @@ class IncApp(Application):
             ret, step = cast(SolveResult, ctl.solve()), step + 1
 
 
+seed(10)
 clingo_main(IncApp(), sys.argv[1:])

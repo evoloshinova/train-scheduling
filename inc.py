@@ -18,7 +18,7 @@ class IncConfig:
     imin: int
     imax: Optional[int]
     istop: str
-    delay_rate: Optional[int]
+    delay_rate: Optional[float]
     min_duration: Optional[int]
     max_duration: Optional[int]
 
@@ -27,9 +27,9 @@ class IncConfig:
         self.imin = 1
         self.imax = None
         self.istop = "SAT"
-        self.delay_rate = 1
-        self.min_duration = 0
-        self.max_duration = 3
+        self.delay_rate = None
+        self.min_duration = None
+        self.max_duration = None
 
 
 def parse_int(conf: Any,
@@ -54,6 +54,27 @@ def parse_int(conf: Any,
         return True
     return parse
 
+def parse_float(conf: Any,
+              attr: str,
+              min_value: Optional[int] = None,
+              optional: bool = False) -> Callable[[str], bool]:
+    '''
+    Returns a parser for integers.
+
+    The parser stores its result in the `attr` attribute (given as string) of
+    the `conf` object. The parser can be configured to only accept integers
+    having a minimum value and also to treat value `"none"` as `None`.
+    '''
+    def parse(sval: str) -> bool:
+        if optional and sval == "none":
+            value = None
+        else:
+            value = float(sval)
+            if min_value is not None and value < min_value:
+                raise RuntimeError("value too small")
+        setattr(conf, attr, value)
+        return True
+    return parse
 
 def parse_stop(conf: Any, attr: str) -> Callable[[str], bool]:
     '''
@@ -104,7 +125,7 @@ class IncApp(Application):
         options.add(
             group, "delay_rate",
             "Delay rate [{}]".format(self._conf.istop),
-            parse_int(self._conf, "delay_rate"))
+            parse_float(self._conf, "delay_rate"))
 
         options.add(
             group, "min_duration",
@@ -124,9 +145,9 @@ class IncApp(Application):
             return 1 - np.exp(-delay_rate)
 
     @staticmethod
-    def generate_delay(delay_rate: int, min_duration: int, max_duration: int) -> int:
-        if random() < IncApp.delay_prob(delay_rate):
-            delay_steps = randint(min_duration, max_duration + 1) + 1
+    def generate_delay(delay_rate: float, min_duration: int, max_duration: int) -> int:
+        if random() < IncApp.delay_prob(delay_rate): #is this right so?
+            delay_steps = randint(min_duration, max_duration)
         else:
             delay_steps = 0
         return delay_steps
@@ -183,5 +204,5 @@ class IncApp(Application):
             ret, step = cast(SolveResult, ctl.solve()), step + 1
 
 
-seed(10)
+#seed(10)
 clingo_main(IncApp(), sys.argv[1:])

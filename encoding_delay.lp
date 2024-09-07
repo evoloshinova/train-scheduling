@@ -2,8 +2,7 @@
 %%clingo 0 instances/env4.lp -
 
 #include "original_plan.lp".
-#include "conflict_locations.lp".
-#include "delay_atoms.lp".
+% #include "conflict_locations.lp".
 
 % #const n=5.
 
@@ -64,22 +63,27 @@ move(Type, DirOut, move_forward) :- track(Type, (DirIn, DirOut)),
 %_________________Generate__________________________
 
 agent(A) :- start(agent(A), _, _, _).
+
+% conflict location, A1 should be earlier then A2
+conflict_location(agent(A1), agent(A1), (Y, X)) :- orig(agent(A1), (Y, X), t1, (_, _)), orig(agent(A2), (Y, X), t2, (_, _)), t1 < t2.
+
 action_type(move_forward). action_type(wait). action_type(move_left). action_type(move_right).
-delay(agent(A), Duration, Time) :- delay(A, Duration, Time).
+% delay(agent(A), Duration, Time) :- delay(A, Duration, Time).
 
 #program base. 
 action(agent(A), wait, 0) :- agent(A).
+% delay(agent(A), 0, 0) :- agent(A).
 current_state(agent(A), (Y,X), 0, Dir) :- start(agent(A),(Y,X),_,dir(D)), dir2int(D, Dir).
 
 #program check(t).
 :- end(agent(A), (Y,X), LatestArrival), query(t), not current_state(agent(A), (Y,X), t, _).
 
-#program step(t, delay(Agent,Duration,Step)).
-% one action for each agent and each timestamp   
+#program step(t).
+% one action for each agent and each timestamp
 1 {action(agent(A), Action, t): action_type(Action)} 1 :- agent(A).
 
 % define that an agent is delayed for current timestep and t + Duration
-delayed(agent(A), Time) :- delay(agent(A), Duration, t), Time = t..(t + Duration-1).
+delayed(agent(a), Time) :- delay(a, d, t), Time = t..(t + d-1).
 
 % when delayed, the agent will not move to the next position but has to wait
 action(agent(A), wait, t) :- delayed(agent(A), t), current_state(agent(A), (Y, X), t - 1, Dir).
@@ -106,13 +110,15 @@ current_state(agent(A), (Y,X), t, Dir) :- current_state(agent(A), (Y,X), t - 1, 
 % when i am A2 it is forbidden to move until A1 has passed it
 % i can move when there is a new atom
 
+
+
 % vertex conflict
 :- current_state(agent(A1), (Y,X), t, _), current_state(agent(A2), (Y,X), t, _), A1 < A2.
 :- current_state(agent(A), (Y, X), t, _), current_state(agent(B), (Y, X), t - 1, _), A != B.
 
 
     
-%#show action/3.
+#show action/3.
 %#show orig/4.
 %#show conflict_location/3.
 #show delayed/3.

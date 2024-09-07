@@ -92,7 +92,7 @@ class IncApp(Application):
     '''
     The example application implemeting incremental solving.
     '''
-    program_name: str = "inc-example"
+    program_name: str = "inc-delay"
     version: str = "1.0"
     _conf: IncConfig
 
@@ -103,7 +103,7 @@ class IncApp(Application):
         '''
         Register program options.
         '''
-        group = "Inc-Example Options"
+        group = "Inc-Delay Options"
 
         options.add(
             group, "imin",
@@ -146,7 +146,7 @@ class IncApp(Application):
 
     @staticmethod
     def generate_delay(delay_rate: float, min_duration: int, max_duration: int) -> int:
-        if random() < IncApp.delay_prob(delay_rate): #is this right so?
+        if random() < IncApp.delay_prob(delay_rate): # is this right though?
             delay_steps = randint(min_duration, max_duration)
         else:
             delay_steps = 0
@@ -159,10 +159,23 @@ class IncApp(Application):
     @staticmethod
     def delay(agent, duration, step):
         return "Delay({agent}, {duration}, {step})".format(agent=agent, step=step, duration=duration)
-
+    @staticmethod
     def write_delay_to_file(self, agent, duration, step):
+
         with open('delay_atoms.lp', 'a') as f:
             f.write(f"delay({agent},{duration},{step}).\n")
+
+
+    @staticmethod
+    def get_number_of_agents(file):
+        print("getting number of agents from {}".format(file))
+        """ works only when a flatland format file is passed"""
+        with open(file, "rt") as fin:
+            fin.readline()
+            num_agents = int(fin.readline().strip().split()[-1])
+            print("there are {} agents".format(num_agents))
+            return num_agents
+
 
 
     def main(self, ctl: Control, files: Sequence[str]):
@@ -185,6 +198,10 @@ class IncApp(Application):
 
         step = 0
         ret: Optional[SolveResult] = None
+
+        num_agents = self.get_number_of_agents(files[1])
+        print(num_agents)
+
         while ((conf.imax is None or step < conf.imax) and
                (ret is None or step < conf.imin or (
                    (conf.istop == "SAT" and not ret.satisfiable) or
@@ -192,6 +209,8 @@ class IncApp(Application):
                    (conf.istop == "UNKNOWN" and not ret.unknown)))):
             parts = []
             parts.append(("check", [Number(step)]))
+            duration = 0
+            agent = 0
             if step > 0:
                 ctl.release_external(Function("query", [Number(step - 1)]))
                 parts.append(("step", [Number(step)]))
@@ -199,15 +218,16 @@ class IncApp(Application):
                 duration = self.generate_delay(conf.delay_rate, conf.min_duration, conf.max_duration)    
 
                 if duration > 0:
-                    agent = self.generate_agent(num_agents=2)
-                    delay = self.delay(agent, duration, step)
+                    agent = self.generate_agent(num_agents)
                     print(f"delay is created at step {step} for agent {agent} and lasts {duration}")  # Ensure atom is grounded
-                    parts.append(("delay", [delay]))
+                    res = [Number(step), Number(agent), Number(duration)]
             else:
                 parts.append(("base", []))
             ctl.ground(parts)
 
             ctl.assign_external(Function("query", [Number(step)]), True)
+            if duration > 0:
+                ctl.assign_external(Function("delay", [Number(agent), Number(step), Number(duration)]), True)
             ret, step = cast(SolveResult, ctl.solve()), step + 1
 
 

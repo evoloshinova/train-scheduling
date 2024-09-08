@@ -84,10 +84,13 @@ current_state(agent(A), (Y,X), 0, Dir) :- start(agent(A),(Y,X),_,dir(D)), dir2in
 1 { delay(agent(a), d, t) } 1.
 
 % define that an agent is delayed for current timestep and t + Duration
-delayed(agent(a), Time) :- delay(a, d, t), Time = t..(t + d-1), d > 0.
+delayed(agent(A), Time) :- delay(agent(A), d, t), Time = t..(t + d-1).
 
 % when delayed, the agent will not move to the next position but has to wait
 action(agent(A), wait, t) :- delayed(agent(A), t), current_state(agent(A), (Y, X), t - 1, Dir).
+
+% when I am A2 and A1 has to wait, I wait as well
+action(agent(A2), wait, t)  :- delayed(agent(A1), t), conflict_location(agent(A1),agent(A2),(Y,X)).
 
 % when not delayed, the agents position in the next timestep changes based on track type and movement 
 current_state(agent(A), (Y + DY, X+DX), t, DirOut2) :- current_state(agent(A), (Y,X), t - 1, DirOut),
@@ -104,15 +107,6 @@ current_state(agent(A), (Y,X), t, Dir) :- current_state(agent(A), (Y,X), t - 1, 
 % there has to be an action for every agent at every timestep
 :- action(agent(A), _, t), not current_state(agent(A), _, t, _).
 
-% when the position i want to move next is a conflict position i have to check
-% when i am A1 i create an atom to show when A2 can pass
-% calculate difference between orig atom time and actual time
-% create atom new, which looks similar to orig but with delay added to time
-% when i am A2 it is forbidden to move until A1 has passed it
-% i can move when there is a new atom
-
-
-
 % vertex conflict
 :- current_state(agent(A1), (Y,X), t, _), current_state(agent(A2), (Y,X), t, _), A1 < A2.
 :- current_state(agent(A), (Y, X), t, _), current_state(agent(B), (Y, X), t - 1, _), A != B.
@@ -122,5 +116,6 @@ current_state(agent(A), (Y,X), t, Dir) :- current_state(agent(A), (Y,X), t - 1, 
 %#show action/3.
 %#show orig/4.
 %#show conflict_location/3.
-#show delay/3.
+%#show delay/3.
+#show delayed/2.
 %#show track/2.

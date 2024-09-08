@@ -220,7 +220,6 @@ class IncApp(Application):
                 if duration > 0:
                     agent = self.generate_agent(num_agents)
                     print(f"delay is created at step {step} for agent {agent} and lasts {duration}")  # Ensure atom is grounded
-                    res = [Number(step), Number(agent), Number(duration)]
             else:
                 parts.append(("base", []))
             ctl.ground(parts)

@@ -89,8 +89,19 @@ delayed(agent(A), Time) :- delay(agent(A), d, t), Time = t..(t + d-1).
 % when delayed, the agent will not move to the next position but has to wait
 action(agent(A), wait, t) :- delayed(agent(A), t), current_state(agent(A), (Y, X), t - 1, Dir).
 
-% when I am A2 and A1 has to wait, I wait as well
-action(agent(A2), wait, t)  :- delayed(agent(A1), t), conflict_location(agent(A1),agent(A2),(Y,X)).
+% when I did not have to wait, my currently collected cummulative delay does not change
+cummulative_delay(agent(A), t, CummulativeDelay) :- cummulative_delay(agent(A), t-1, CummulativeDelay), not action(agent(A), wait, t-1), t-1 > EarliestDeparture, start(agent(A), _, EarliestDeparture, _).
+
+% when I was waiting my current cummulative delay increases
+cummulative_delay(agent(A), t, CummulativeDelay+1) :- cummulative_delay(agent(A), t-1, CummulativeDelay), action(agent(A), wait, t-1), t-1 > EarliestDeparture, start(agent(A), _, EarliestDeparture, _).
+
+% when I am A2 I wait in front of a conflict location when there is a difference in cummulative delay
+% get the position before a conflict from orig atom
+action(agent(A2), wait, t)  :- conflict_location(agent(A1), agent(A2),(NextY, NextX)), orig(agent(A2), (Y,X), _, (NextY, NextX)), current_state(agent(A2), (Y,X), t, _), cummulative_delay(agent(A1), t, CummulativeDelay).
+
+% warten vor conflict location für dauer der differenz der cummulativen delays beider agenten
+action(agent(A2), wait, t)  :- conflict_location(agent(A1), agent(A2),(NextY, NextX)), orig(agent(A2), (Y,X), _, (NextY, NextX)), current_state(agent(A2), (Y,X), t, _), DifDelay > 0, DifDelay = CummulativeDelayA2 - CummulativeDelayA1, cummulative_delay(agent(A2), t, CummulativeDelayA2), cummulative_delay(agent(A1), t, CummulativeDelayA1).
+
 
 % when not delayed, the agents position in the next timestep changes based on track type and movement 
 current_state(agent(A), (Y + DY, X+DX), t, DirOut2) :- current_state(agent(A), (Y,X), t - 1, DirOut),
@@ -113,9 +124,9 @@ current_state(agent(A), (Y,X), t, Dir) :- current_state(agent(A), (Y,X), t - 1, 
 
 
     
-%#show action/3.
+#show action/3.
 %#show orig/4.
 %#show conflict_location/3.
 %#show delay/3.
-#show delayed/2.
+%#show delayed/2.
 %#show track/2.

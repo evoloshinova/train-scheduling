@@ -72,18 +72,19 @@ action_type(move_forward). action_type(wait). action_type(move_left). action_typ
 
 #program base. 
 action(agent(A), wait, 0) :- agent(A).
-% delay(agent(A), 0, 0) :- agent(A).
+
 current_state(agent(A), (Y,X), 0, Dir) :- start(agent(A),(Y,X),_,dir(D)), dir2int(D, Dir).
 
 #program check(t).
 :- end(agent(A), (Y,X), LatestArrival), query(t), not current_state(agent(A), (Y,X), t, _).
 
-#program step(t).
+#program step(t, a, d).
 % one action for each agent and each timestamp
 1 {action(agent(A), Action, t): action_type(Action)} 1 :- agent(A).
+1 { delay(agent(a), d, t) } 1.
 
 % define that an agent is delayed for current timestep and t + Duration
-delayed(agent(a), Time) :- delay(a, d, t), Time = t..(t + d-1).
+delayed(agent(a), Time) :- delay(a, d, t), Time = t..(t + d-1), d > 0.
 
 % when delayed, the agent will not move to the next position but has to wait
 action(agent(A), wait, t) :- delayed(agent(A), t), current_state(agent(A), (Y, X), t - 1, Dir).
@@ -118,8 +119,8 @@ current_state(agent(A), (Y,X), t, Dir) :- current_state(agent(A), (Y,X), t - 1, 
 
 
     
-#show action/3.
+%#show action/3.
 %#show orig/4.
 %#show conflict_location/3.
-#show delayed/3.
+#show delay/3.
 %#show track/2.

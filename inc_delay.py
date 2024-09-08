@@ -159,9 +159,9 @@ class IncApp(Application):
     @staticmethod
     def delay(agent, duration, step):
         return "Delay({agent}, {duration}, {step})".format(agent=agent, step=step, duration=duration)
+    
     @staticmethod
     def write_delay_to_file(self, agent, duration, step):
-
         with open('delay_atoms.lp', 'a') as f:
             f.write(f"delay({agent},{duration},{step}).\n")
 
@@ -187,6 +187,7 @@ class IncApp(Application):
         for file_ in files:
             ctl.load(file_)
         ctl.add("check", ["t"], "#external query(t).")
+        ctl.add("check", ["t"], "#external delay(a, d, t).")
 
         conf = self._conf
         if conf.delay_rate is None:
@@ -213,20 +214,19 @@ class IncApp(Application):
             agent = 0
             if step > 0:
                 ctl.release_external(Function("query", [Number(step - 1)]))
-                parts.append(("step", [Number(step)]))
 
-                duration = self.generate_delay(conf.delay_rate, conf.min_duration, conf.max_duration)    
+                duration = self.generate_delay(conf.delay_rate, conf.min_duration, conf.max_duration)  
+                agent = self.generate_agent(num_agents)
+                parts.append(("step", [Number(step), Number(agent), Number(duration)]))
 
                 if duration > 0:
-                    agent = self.generate_agent(num_agents)
                     print(f"delay is created at step {step} for agent {agent} and lasts {duration}")  # Ensure atom is grounded
             else:
                 parts.append(("base", []))
+            
             ctl.ground(parts)
 
             ctl.assign_external(Function("query", [Number(step)]), True)
-            if duration > 0:
-                ctl.assign_external(Function("delay", [Number(agent), Number(step), Number(duration)]), True)
             ret, step = cast(SolveResult, ctl.solve()), step + 1
 
 

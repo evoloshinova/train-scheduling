@@ -72,7 +72,6 @@ action_type(move_forward). action_type(wait). action_type(move_left). action_typ
 
 #program base. 
 action(agent(A), wait, 0) :- agent(A).
-
 current_state(agent(A), (Y,X), 0, Dir) :- start(agent(A),(Y,X),_,dir(D)), dir2int(D, Dir).
 
 #program check(t).
@@ -89,6 +88,9 @@ delayed(agent(A), Time) :- delay(agent(A), d, t), Time = t..(t + d-1).
 % when delayed, the agent will not move to the next position but has to wait
 action(agent(A), wait, t) :- delayed(agent(A), t), current_state(agent(A), (Y, X), t - 1, Dir).
 
+% before earliest departure cummulative delay is 0
+cummulative_delay(agent(A), t, 0) :- start(agent(A), _, EarliestDeparture, _), t-1 <= EarliestDeparture.
+
 % when I did not have to wait, my currently collected cummulative delay does not change
 cummulative_delay(agent(A), t, CummulativeDelay) :- cummulative_delay(agent(A), t-1, CummulativeDelay), not action(agent(A), wait, t-1), t-1 > EarliestDeparture, start(agent(A), _, EarliestDeparture, _).
 
@@ -99,8 +101,8 @@ cummulative_delay(agent(A), t, CummulativeDelay+1) :- cummulative_delay(agent(A)
 % get the position before a conflict from orig atom
 action(agent(A2), wait, t)  :- conflict_location(agent(A1), agent(A2),(NextY, NextX)), orig(agent(A2), (Y,X), _, (NextY, NextX)), current_state(agent(A2), (Y,X), t, _), cummulative_delay(agent(A1), t, CummulativeDelay).
 
-% warten vor conflict location für dauer der differenz der cummulativen delays beider agenten
-action(agent(A2), wait, t)  :- conflict_location(agent(A1), agent(A2),(NextY, NextX)), orig(agent(A2), (Y,X), _, (NextY, NextX)), current_state(agent(A2), (Y,X), t, _), DifDelay > 0, DifDelay = CummulativeDelayA2 - CummulativeDelayA1, cummulative_delay(agent(A2), t, CummulativeDelayA2), cummulative_delay(agent(A1), t, CummulativeDelayA1).
+% A2 has to wait in front of conflict location as long as there is a difference in cummulative delay to A1
+action(agent(A2), wait, t)  :- conflict_location(agent(A1), agent(A2),(NextY, NextX)), orig(agent(A2), (Y,X), _, (NextY, NextX)), current_state(agent(A2), (Y,X), t, _), DifDelay > 0, DifDelay = CummulativeDelayA1 - CummulativeDelayA2, cummulative_delay(agent(A2), t, CummulativeDelayA2), cummulative_delay(agent(A1), t, CummulativeDelayA1).
 
 
 % when not delayed, the agents position in the next timestep changes based on track type and movement 
@@ -130,3 +132,4 @@ current_state(agent(A), (Y,X), t, Dir) :- current_state(agent(A), (Y,X), t - 1, 
 %#show delay/3.
 %#show delayed/2.
 %#show track/2.
+%#show cummulative_delay/3.

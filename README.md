@@ -44,6 +44,7 @@ Run the following command:
 
 ```bash
 python inc_orig.py encoding_orig.lp instances/flatland_environment_instance.lp --imax 100
+```
 
 - `encoding_orig.lp`: ASP encoding for the original problem.
 - `instances/flatland_environment_instance.lp`: Environment instance file specifying the Flatland grid.
@@ -59,6 +60,7 @@ In this approach, the second agent (A2) waits immediately at a conflict location
 
 ```bash
 python inc_delay.py encoding_immediate_delay.lp instances/flatland_environment_instance.lp --imax 100 --delay_rate 0.2 --min_duration 2 --max_duration 5
+```
 
 - `encoding_immediate_delay.lp`: ASP encoding for handling malfunctions with Immediate Delay.
 - Set the malfunction probability and define the range for malfunction durations.
@@ -69,6 +71,7 @@ In this approach, agent A2 waits at the position preceding the conflict location
 
 ```bash
 python inc_delay.py encoding_shifted_delay.lp instances/flatland_environment_instance.lp --imax 100 --delay_rate 0.2 --min_duration 2 --max_duration 5
+```
 
 - `encoding_shifted_delay.lp`: ASP encoding for handling malfunctions with Shifted Delay.
   
@@ -83,6 +86,7 @@ To run the notebook, use
 
 ```bash
 jupyter notebook train_scheduling.ipynb
+```
 
 ## Explanation of the Methods
 

@@ -100,15 +100,24 @@ class IncApp(Application):
             ctl.load(file_)
         ctl.add("check", ["t"], "#external query(t).")
 
+        # Set the configuration to stop after the first solution is found
+        ctl.configuration.solve.models = 1
+
         conf = self._conf
         step = 0
         ret: Optional[SolveResult] = None
+        optimal_model = None
+
+        def on_model(model):
+            nonlocal optimal_model
+            optimal_model = model.symbols(shown=True)  # Capture the symbols from the model
+            return False  # Stop solving after the first model is found
 
         while ((conf.imax is None or step < conf.imax) and
-               (ret is None or step < conf.imin or (
-                   (conf.istop == "SAT" and not ret.satisfiable) or
-                   (conf.istop == "UNSAT" and not ret.unsatisfiable) or
-                   (conf.istop == "UNKNOWN" and not ret.unknown)))):
+            (ret is None or step < conf.imin or (
+                (conf.istop == "SAT" and not ret.satisfiable) or
+                (conf.istop == "UNSAT" and not ret.unsatisfiable) or
+                (conf.istop == "UNKNOWN" and not ret.unknown)))):
             parts = []
             parts.append(("check", [Number(step)]))
             if step > 0:
@@ -119,7 +128,16 @@ class IncApp(Application):
             ctl.ground(parts)
 
             ctl.assign_external(Function("query", [Number(step)]), True)
-            ret, step = cast(SolveResult, ctl.solve()), step + 1
+            ret, step = cast(SolveResult, ctl.solve(on_model=on_model)), step + 1
+
+
+        # Now write the captured model's relevant atoms to a file
+        if optimal_model is not None:
+            print("Writing the optimal model to file...")  # Debugging line
+            with open("original_plan.lp", "w") as f:
+                for atom in optimal_model:
+                    if atom.match("orig", 4) or atom.match("conflict_location", 3):
+                        f.write(f"{atom}.\n")
 
 
 clingo_main(IncApp(), sys.argv[1:])

@@ -65,7 +65,7 @@ move(Type, DirOut, move_forward) :- track(Type, (DirIn, DirOut)),
 agent(A) :- start(agent(A), _, _, _).
 
 % conflict location, A1 should be earlier then A2
-conflict_location(agent(A1), agent(A1), (Y, X)) :- orig(agent(A1), (Y, X), t1, (_, _)), orig(agent(A2), (Y, X), t2, (_, _)), t1 < t2.
+conflict_location(agent(A1), agent(A2), (Y, X)) :- orig(agent(A1), (Y, X), t1, (_, _)), orig(agent(A2), (Y, X), t2, (_, _)), t1 < t2.
 
 action_type(move_forward). action_type(wait). action_type(move_left). action_type(move_right).
 % delay(agent(A), Duration, Time) :- delay(A, Duration, Time).
@@ -106,10 +106,17 @@ action(agent(A2), wait, t)  :- conflict_location(agent(A1), agent(A2),(NextY, Ne
 
 
 % when not delayed, the agents position in the next timestep changes based on track type and movement 
-current_state(agent(A), (Y + DY, X+DX), t, DirOut2) :- current_state(agent(A), (Y,X), t - 1, DirOut),
-    action(agent(A), Action, t), cell((Y,X), Type), cell((Y + DY, X+DX), Type2),
-    track(Type, (_, DirOut)), track(Type2, (DirIn,DirOut2)), move(Type, DirOut, Action),
-    revDir(DirIn, DirOut), moveDir(DirOut, (DY,DX)), not delayed(agent(A), t).
+% current_state(agent(A), (Y + DY, X+DX), t, DirOut2) :- current_state(agent(A), (Y,X), t - 1, DirOut),
+ %    action(agent(A), Action, t), cell((Y,X), Type), cell((Y + DY, X+DX), Type2),
+  %  track(Type, (_, DirOut)), track(Type2, (DirIn,DirOut2)), move(Type, DirOut, Action),
+   % revDir(DirIn, DirOut), moveDir(DirOut, (DY,DX)), not delayed(agent(A), t).
+
+
+current_state(agent(A), (NextY, NextX), t, DirOut2) :- action(agent(A), Action, t), not action(agent(A), wait, t), 
+    current_state(agent(A), (Y,X), t - 1, DirOut), orig(agent(A), (Y, X), _, (NextY, NextX)), 
+    cell((Y,X), Type), cell((NextY, NextX), Type2), track(Type, (_, DirOut)), 
+    track(Type2, (DirIn,DirOut2)), move(Type, DirOut, Action),
+    revDir(DirIn, DirOut), moveDir(DirOut, (NextY-Y,NextX-X)).
 
 % when waiting the position doesn't change
 current_state(agent(A), (Y,X), t, Dir) :- current_state(agent(A), (Y,X), t - 1, Dir), action(agent(A), wait, t).
@@ -127,9 +134,3 @@ current_state(agent(A), (Y,X), t, Dir) :- current_state(agent(A), (Y,X), t - 1, 
 
     
 #show action/3.
-%#show orig/4.
-%#show conflict_location/3.
-%#show delay/3.
-%#show delayed/2.
-%#show track/2.
-%#show cummulative_delay/3.

@@ -98,7 +98,5 @@ current_state(agent(A), (Y,X), t, Dir) :- current_state(agent(A), (Y,X), t - 1, 
 :- current_state(agent(A), (Y, X), t, _), current_state(agent(B), (Y, X), t - 1, _), A != B.
 
     
-%#show action/3.
+#show action/3.
 #show orig/4.
-%#show move/3.
-%#show track/2.

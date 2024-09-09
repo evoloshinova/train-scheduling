@@ -81,23 +81,18 @@ current_state(agent(A), (Y,X), 0, Dir) :- start(agent(A),(Y,X),_,dir(D)), dir2in
 #program step(t, a, d).
 % one action for each agent and each timestamp
 1 {action(agent(A), Action, t): action_type(Action)} 1 :- agent(A).
-1 { delay(agent(a), d, t) } 1.
+delay(agent(a), d, t).
 
 % define that an agent is delayed for current timestep and t + Duration
 delayed(agent(A), Time) :- delay(agent(A), d, t), Time = t..(t + d-1).
 
 % when delayed, the agent will not move to the next position but has to wait
-action(agent(A), wait, t) :- delayed(agent(A), t), current_state(agent(A), (Y, X), t - 1, Dir).
+action(agent(A), wait, t) :- delayed(agent(A), t).
 
 % when I am A2 and A1 has to wait, I wait as well
 action(agent(A2), wait, t)  :- delayed(agent(A1), t), conflict_location(agent(A1),agent(A2),(Y,X)).
 
 % when not delayed, the agents position in the next timestep changes based on track type and movement 
-%current_state(agent(A), (Y + DY, X+DX), t, DirOut2) :- current_state(agent(A), (Y,X), t - 1, DirOut),
- %   action(agent(A), Action, t), cell((Y,X), Type), cell((Y + DY, X+DX), Type2),
-  %  track(Type, (_, DirOut)), track(Type2, (DirIn,DirOut2)), move(Type, DirOut, Action),
-   % revDir(DirIn, DirOut), moveDir(DirOut, (DY,DX)), not delayed(agent(A), t).
-
 current_state(agent(A), (NextY, NextX), t, DirOut2) :- action(agent(A), Action, t), not action(agent(A), wait, t), 
     current_state(agent(A), (Y,X), t - 1, DirOut), orig(agent(A), (Y, X), _, (NextY, NextX)), 
     cell((Y,X), Type), cell((NextY, NextX), Type2), track(Type, (_, DirOut)), 
